@@ -284,7 +284,8 @@ fig_heatmap.update_layout(height=400)
 st.plotly_chart(fig_heatmap, use_container_width=True)
 
 st.subheader("📑 Data Student Records")
-st.dataframe(df, use_container_width=True)import os
+st.dataframe(df, use_container_width=True)
+import os
 import numpy as np
 import pandas as pd
 import plotly.express as px
