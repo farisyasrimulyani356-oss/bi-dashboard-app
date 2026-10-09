@@ -62,7 +62,8 @@ with col_right:
     st.plotly_chart(fig_hist, use_container_width=True)
 
 st.subheader("📑 Data Student Records")
-st.dataframe(df, use_container_width=True)import os
+st.dataframe(df, use_container_width=True)
+import os
 import webbrowser
 from threading import Timer
 from flask import Flask, render_template, request, jsonify
