@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executive BI Dashboard & Predictive Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-blue: #38bdf8;
+            --accent-green: #4ade80;
+            --accent-red: #f87171;
+            --accent-purple: #c084fc;
+            --border-color: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            padding: 24px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        select, input, button {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 8px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            border-color: var(--accent-blue);
+        }
+
+        .banner {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border-left: 4px solid var(--accent-blue);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            color: var(--text-secondary);
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background-color: var(--bg-card);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .kpi-title {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .kpi-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--accent-blue);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .slider-group {
+            margin-bottom: 12px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+
+        .slider-input {
+            width: 100%;
+            accent-color: var(--accent-blue);
+        }
+
+        .sim-output {
+            background-color: #0f172a;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 16px;
+        }
+
+        .bts-container {
+            display: none;
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: var(--accent-green);
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            max-height: 400px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #0f172a;
+            color: var(--text-secondary);
+            position: sticky;
+            top: 0;
+        }
+
+        .heatmap-cell {
+            text-align: center;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>
+            <h2>Executive BI Dashboard & Predictive Analytics</h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Analisis Faktor-Faktor Penentu Performa Akademik Siswa</p>
+        </div>
+        <div class="header-controls">
+            <select id="genderFilter" onchange="loadDashboardData()">
+                <option value="Semua">Filter: Semua Gender</option>
+                <option value="F">Perempuan (F)</option>
+                <option value="M">Laki-laki (M)</option>
+            </select>
+            <button onclick="exportCSV()">Ekspor CSV</button>
+            <button onclick="window.print()">Cetak Report</button>
+        </div>
+    </div>
+
+    <div class="banner" id="insightBanner">
+        <strong>Insight Otomatis:</strong> Memuat ringkasan tren dan korelasi utama...
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-title">RATA-RATA EXAM SCORE</div>
+            <div class="kpi-value" id="kpiScore">0</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">RATA-RATA STUDY HOURS</div>
+            <div class="kpi-value" id="kpiStudy">0 hrs</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">RATA-RATA ATTENDANCE</div>
+            <div class="kpi-value" id="kpiAttendance">0%</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">SISWA BUTUH INTERVENSI (<65)</div>
+            <div class="kpi-value" style="color: var(--accent-red);" id="kpiRisk">0</div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-title">
+                <span>What-If Simulator Prediksi Nilai</span>
+                <button onclick="toggleBTS()" style="font-size: 0.8rem;">Behind the Scenes</button>
+            </div>
+            
+            <div class="slider-group">
+                <div class="slider-label"><span>Study Hours</span><span id="valStudy">12</span></div>
+                <input type="range" id="simStudy" class="slider-input" min="0" max="30" value="12" oninput="runSimulation()">
+            </div>
+            <div class="slider-group">
+                <div class="slider-label"><span>Attendance (%)</span><span id="valAttend">85</span></div>
+                <input type="range" id="simAttend" class="slider-input" min="50" max="100" value="85" oninput="runSimulation()">
+            </div>
+            <div class="slider-group">
+                <div class="slider-label"><span>Sleep Hours</span><span id="valSleep">7</span></div>
+                <input type="range" id="simSleep" class="slider-input" min="3" max="12" value="7" oninput="runSimulation()">
+            </div>
+            <div class="slider-group">
+                <div class="slider-label"><span>Screen Hours</span><span id="valScreen">5</span></div>
+                <input type="range" id="simScreen" class="slider-input" min="0" max="15" value="5" oninput="runSimulation()">
+            </div>
+
+            <div class="sim-output">
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">ESTIMASI EXAM SCORE</div>
+                <div style="font-size: 2.5rem; font-weight: bold; color: var(--accent-green);" id="simResult">0.0</div>
+                <div style="font-size: 0.9rem; color: var(--accent-purple);" id="simGrade">Grade: -</div>
+            </div>
+
+            <div class="bts-container" id="btsBox">
+                <div><strong>Persamaan Model OLS (R² = 0.9924):</strong></div>
+                <div id="btsFormula" style="margin-top: 4px;"></div>
+                <div id="btsCalculation" style="margin-top: 8px; color: var(--text-secondary);"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Profil Multi-Aksis Gender (Radar Chart)</div>
+            <div style="height: 320px;">
+                <canvas id="radarChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-title">
+                <span>Ranking Korelasi Terhadap Target</span>
+                <select id="targetSelect" onchange="updateCorrelationRank()" style="font-size: 0.85rem;">
+                    <option value="Exam_Score">Target: Exam Score</option>
+                    <option value="Satisfaction">Target: Satisfaction</option>
+                    <option value="Attendance">Target: Attendance</option>
+                </select>
+            </div>
+            <div style="height: 300px;">
+                <canvas id="rankChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span>Scatter Plot Detail</span>
+                <div>
+                    <select id="scatterX" onchange="updateScatterPlot()" style="font-size: 0.8rem;"></select>
+                    <select id="scatterY" onchange="updateScatterPlot()" style="font-size: 0.8rem;"></select>
+                </div>
+            </div>
+            <div style="height: 300px;">
+                <canvas id="scatterChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-title">Matriks Korelasi Heatmap</div>
+            <div class="table-responsive">
+                <table id="heatmapTable"></table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span>Tabel Data Siswa</span>
+                <input type="text" id="searchInput" placeholder="Cari ID / Gender..." onkeyup="filterTable()" style="font-size: 0.8rem; width: 160px;">
+            </div>
+            <div class="table-responsive">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th><th>Gender</th><th>Study</th><th>Attend</th><th>Exam</th><th>Screen</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let globalData = {};
+        let radarChartObj = null;
+        let rankChartObj = null;
+        let scatterChartObj = null;
+
+        async function loadDashboardData() {
+            const gender = document.getElementById('genderFilter').value;
+            const res = await fetch(`/api/data?gender=${gender}`);
+            globalData = await res.json();
+
+            renderKPIs();
+            renderInsightBanner();
+            runSimulation();
+            renderRadarChart();
+            populateScatterDropdowns();
+            updateCorrelationRank();
+            updateScatterPlot();
+            renderHeatmap();
+            renderTable();
+        }
+
+        function renderKPIs() {
+            document.getElementById('kpiScore').innerText = globalData.stats.Exam_Score.mean;
+            document.getElementById('kpiStudy').innerText = globalData.stats.Study_Hours.mean + ' hrs';
+            document.getElementById('kpiAttendance').innerText = globalData.stats.Attendance.mean + '%';
+            document.getElementById('kpiRisk').innerText = `${globalData.at_risk_count} / ${globalData.total_students}`;
+        }
+
+        function renderInsightBanner() {
+            const corr = globalData.corr_matrix.Exam_Score;
+            document.getElementById('insightBanner').innerHTML = 
+                `<strong>Insight Otomatis:</strong> Variabel <strong>Screen Hours</strong> memiliki korelasi negatif kuat (${corr.Screen_Hours}) terhadap Exam Score, sedangkan <strong>Attendance</strong> (${corr.Attendance}) dan <strong>Study Hours</strong> (${corr.Study_Hours}) berpengaruh paling positif.`;
+        }
+
+        function runSimulation() {
+            const study = parseFloat(document.getElementById('simStudy').value);
+            const attend = parseFloat(document.getElementById('simAttend').value);
+            const sleep = parseFloat(document.getElementById('simSleep').value);
+            const screen = parseFloat(document.getElementById('simScreen').value);
+
+            document.getElementById('valStudy').innerText = study;
+            document.getElementById('valAttend').innerText = attend;
+            document.getElementById('valSleep').innerText = sleep;
+            document.getElementById('valScreen').innerText = screen;
+
+            const w = globalData.weights;
+            let score = w.intercept + (w.Study_Hours * study) + (w.Attendance * attend) + (w.Sleep_Hours * sleep) + (w.Screen_Hours * screen);
+            score = Math.min(Math.max(score, 0), 100);
+
+            document.getElementById('simResult').innerText = score.toFixed(1);
+
+            let grade = 'E';
+            if (score >= 85) grade = 'A';
+            else if (score >= 75) grade = 'B';
+            else if (score >= 65) grade = 'C';
+            else if (score >= 50) grade = 'D';
+            document.getElementById('simGrade').innerText = 'Grade Prediksi: ' + grade;
+
+            document.getElementById('btsFormula').innerText = 
+                `Exam_Score = ${w.intercept} + (${w.Study_Hours}*Study) + (${w.Attendance}*Attend) + (${w.Sleep_Hours}*Sleep) + (${w.Screen_Hours}*Screen)`;
+            document.getElementById('btsCalculation').innerText = 
+                `= ${w.intercept} + (${(w.Study_Hours*study).toFixed(2)}) + (${(w.Attendance*attend).toFixed(2)}) + (${(w.Sleep_Hours*sleep).toFixed(2)}) + (${(w.Screen_Hours*screen).toFixed(2)}) = ${score.toFixed(2)}`;
+        }
+
+        function toggleBTS() {
+            const box = document.getElementById('btsBox');
+            box.style.display = box.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function renderRadarChart() {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            if (radarChartObj) radarChartObj.destroy();
+
+            const rData = globalData.radar_data;
+            const labels = Object.keys(rData.F);
+
+            radarChartObj = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Female (F)', data: Object.values(rData.F), borderColor: '#c084fc', backgroundColor: 'rgba(192, 132, 252, 0.2)' },
+                        { label: 'Male (M)', data: Object.values(rData.M), borderColor: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.2)' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { r: { grid: { color: '#334155' }, angleLines: { color: '#334155' }, ticks: { backdropColor: 'transparent', color: '#94a3b8' } } }
+                }
+            });
+        }
+
+        function updateCorrelationRank() {
+            const target = document.getElementById('targetSelect').value;
+            const corr = globalData.corr_matrix[target];
+            
+            const sorted = Object.entries(corr)
+                .filter(([k]) => k !== target)
+                .sort((a, b) => b[1] - a[1]);
+
+            const ctx = document.getElementById('rankChart').getContext('2d');
+            if (rankChartObj) rankChartObj.destroy();
+
+            rankChartObj = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sorted.map(item => item[0]),
+                    datasets: [{
+                        label: 'Koefisien Korelasi',
+                        data: sorted.map(item => item[1]),
+                        backgroundColor: sorted.map(item => item[1] >= 0 ? '#4ade80' : '#f87171')
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' }, min: -1, max: 1 },
+                        y: { grid: { display: false }, ticks: { color: '#f8fafc' } }
+                    }
+                }
+            });
+        }
+
+        function populateScatterDropdowns() {
+            const xSel = document.getElementById('scatterX');
+            const ySel = document.getElementById('scatterY');
+            
+            if (xSel.options.length === 0) {
+                globalData.numeric_cols.forEach(col => {
+                    xSel.add(new Option(col, col));
+                    ySel.add(new Option(col, col));
+                });
+                xSel.value = 'Study_Hours';
+                ySel.value = 'Exam_Score';
+            }
+        }
+
+        function updateScatterPlot() {
+            const xCol = document.getElementById('scatterX').value;
+            const yCol = document.getElementById('scatterY').value;
+
+            const points = globalData.raw_data.map(d => ({ x: d[xCol], y: d[yCol] }));
+            const ctx = document.getElementById('scatterChart').getContext('2d');
+            
+            if (scatterChartObj) scatterChartObj.destroy();
+
+            scatterChartObj = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: `${xCol} vs ${yCol}`,
+                        data: points,
+                        backgroundColor: '#38bdf8'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { title: { display: true, text: xCol, color: '#94a3b8' }, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                        y: { title: { display: true, text: yCol, color: '#94a3b8' }, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        function renderHeatmap() {
+            const matrix = globalData.corr_matrix;
+            const cols = globalData.numeric_cols;
+            const table = document.getElementById('heatmapTable');
+            
+            let html = '<thead><tr><th></th>' + cols.map(c => `<th>${c.substring(0,6)}..</th>`).join('') + '</tr></thead><tbody>';
+            
+            cols.forEach(row => {
+                html += `<tr><th>${row.substring(0,6)}..</th>`;
+                cols.forEach(col => {
+                    const val = matrix[row][col];
+                    let bg = 'transparent';
+                    if (val > 0) bg = `rgba(74, 222, 128, ${val})`;
+                    else if (val < 0) bg = `rgba(248, 113, 113, ${Math.abs(val)})`;
+
+                    html += `<td class="heatmap-cell" style="background-color: ${bg}; color: #fff;">${val}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody>';
+            table.innerHTML = html;
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = globalData.raw_data.map(d => `
+                <tr>
+                    <td>${d.Student_ID}</td>
+                    <td>${d.Gender}</td>
+                    <td>${d.Study_Hours}</td>
+                    <td>${d.Attendance}%</td>
+                    <td style="color: ${d.Exam_Score < 65 ? 'var(--accent-red)' : 'var(--accent-green)'}">${d.Exam_Score}</td>
+                    <td>${d.Screen_Hours}</td>
+                </tr>
+            `).join('');
+        }
+
+        function filterTable() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#tableBody tr');
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+
+        function exportCSV() {
+            let csv = 'Student_ID,Gender,Study_Hours,Attendance,Exam_Score,Screen_Hours\n';
+            globalData.raw_data.forEach(d => {
+                csv += `${d.Student_ID},${d.Gender},${d.Study_Hours},${d.Attendance},${d.Exam_Score},${d.Screen_Hours}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'data_siswa.csv');
+            a.click();
+        }
+
+        window.onload = loadDashboardData;
+    </script>
+</body>
+</html>
